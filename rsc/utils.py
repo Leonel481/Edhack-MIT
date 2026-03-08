@@ -220,7 +220,7 @@ def procesar_urmecea(path_excel: str) -> pd.DataFrame:
         df['Cod_Local']
         .astype('Int64')
         .astype(str)
-        .str.zfill(7)
+        .str.zfill(6)
     )
 
     # Mapear nivel de logro
@@ -279,11 +279,32 @@ def procesar_urmecea(path_excel: str) -> pd.DataFrame:
 
     return df_result
 
+def procesar_distancias(path_excel: str) -> pd.DataFrame:
+    """
+    Procesa el archivo histórico URMECEA:
+    - normaliza codigos
+    - convierte nivel de logro a numérico
+    - genera variables binarias
+    - calcula promedio de evaluación
+    """
+
+    df = pd.read_csv(path_excel)
+
+    # Normalizar código local
+    df['CODLOCAL'] = (
+        df['CODLOCAL']
+        .astype('Int64')
+        .astype(str)
+        .str.zfill(6)
+    )
+
+    return df
 
 def transformar_urmecea(
     df_edif: pd.DataFrame,
     df_aula: pd.DataFrame,
     df_padron: pd.DataFrame,
+    path_distancia: str,
     path_urmecea: str
 ) -> pd.DataFrame:
     """
@@ -293,7 +314,8 @@ def transformar_urmecea(
     df_padron_clean = preparar_padron(df_padron)
     df_aulas = transformar_aulas(df_aula)
     df_edificios = transformar_edificios(df_edif)
-
+    
+    
     # Integración de datasets
     df_infraestructura = (
         df_edificios
@@ -305,8 +327,9 @@ def transformar_urmecea(
         .merge(df_infraestructura, on='CODLOCAL', how='left')
     )
 
-    # Procesar URMECEA
+    # Procesar URMECEA y DISTANCIAS
     df_urmecea = procesar_urmecea(path_urmecea)
+    df_distancias = procesar_distancias(path_distancia)
 
     # Merge final
     df_final = (
@@ -314,4 +337,9 @@ def transformar_urmecea(
         .merge(df_base, on='CODLOCAL', how='left')
     )
 
-    return df_final
+    df_modelo = (
+        df_final
+        .merge(df_distancias, on='CODLOCAL', how='left')
+    )
+
+    return df_modelo
